@@ -95,7 +95,7 @@ public class SampleHandler extends AbstractHandler {
 			
 			List<List> allPaths = new ArrayList<List>();
 			
-			int[] levelFindLoop = new int[3];
+			int[] levelFindLoop = new int[4];
 			
 			// get types including Thread and all the subclasses of the Thread
 			List<IType> threadAndSubclassesOfThread = getSubClasses(project);
@@ -112,6 +112,9 @@ public class SampleHandler extends AbstractHandler {
 			int levelTwoLeaves = 0;
 			int levelThreeCallers = 0;
 			int levelThreeLeaves = 0;
+			int levelFourCallers = 0;
+			int levelFourLeaves = 0;
+			
 			// These 4 variables are used to count how many bound path is concluded by which pattern.
 			int numOfPatternOne = 0;
 			int numOfPatternTwo = 0;
@@ -390,46 +393,170 @@ public class SampleHandler extends AbstractHandler {
 											}
 											levelThreePath = tempLevelThree;
 										}
-									//	allPaths.addAll(levelThreePath);
-										for(int i = 0; i < levelThreePath.size(); i++){
-											levelThreeLeaves++;
-											numOfPaths++;
-											int analysisRes = analyzePath(levelThreePath.get(i), levelFindLoop);
-											if(analysisRes == 0){
-												numOfWrongPaths++;
-												System.out.println(levelThreePath.get(i));
-												output += levelThreePath.get(i)+"\n";
-												System.out.println("This path is wrong!");
-												output += "This path is wrong!\n";
-												res = false;
-											}else{
-												numOfRightPaths++;
-												System.out.println("This path is right!");
-												output += "This path is right!\n";
-												switch (analysisRes) {
-												case 1:
-													System.out.println("satisfy pattern 1");
-													output += "satisfy pattern 1\n";
-													numOfPatternOne++;
-													break;
-												case 2:
-													System.out.println("satisfy pattern 2");
-													output += "satisfy pattern 1\n";
-													numOfPatternTwo++;
-													break;
-												case 3:
-													System.out.println("satisfy pattern 3");
-													output += "satisfy pattern 1\n";
-													numOfPatternThree++;
-													break;
-												case 4:
-													System.out.println("satisfy pattern 4");
-													output += "satisfy pattern 1\n";
-													numOfPatternFour++;
-													break;
+										
+										
+										//level 4 methods that call the callererer in level 3
+										HashSet<IMethod> callerererers = getCallersOf(callererer);
+										//level 3 is leaf
+										if(callerererers.size() == 0){
+										//	allPaths.addAll(levelTwoPath);
+											for(int i = 0; i < levelThreePath.size(); i++){
+												numOfPaths++;
+												levelThreeLeaves++;
+												int analysisRes = analyzePath(levelThreePath.get(i), levelFindLoop);
+												if(analysisRes == 0){
+													numOfWrongPaths++;
+													System.out.println(levelThreePath.get(i));
+													output += levelThreePath.get(i)+"\n";
+													System.out.println("This path is wrong!");
+													output += "This path is wrong!\n";
+													res = false;
+												}else{
+													numOfRightPaths++;
+													System.out.println("This path is right!");
+													output += "This path is right!\n";
+													switch (analysisRes) {
+													case 1:
+														System.out.println("satisfy pattern 1");
+														output += "satisfy pattern 1\n";
+														numOfPatternOne++;
+														break;
+													case 2:
+														System.out.println("satisfy pattern 2");
+														output += "satisfy pattern 1\n";
+														numOfPatternTwo++;
+														break;
+													case 3:
+														System.out.println("satisfy pattern 3");
+														output += "satisfy pattern 1\n";
+														numOfPatternThree++;
+														break;
+													case 4:
+														System.out.println("satisfy pattern 4");
+														output += "satisfy pattern 1\n";
+														numOfPatternFour++;
+														break;
+													}
 												}
 											}
+											continue;
 										}
+										
+										int nullCallererererCount = 0;
+										
+										for (IMethod callerererer : callerererers){
+											MethodDeclaration callererererDeclaration = getMethodDeclarationFromIMethod(project, callerererer);
+											//some callerererers are in the jar files which we don't care.
+											
+											if(callererererDeclaration == null){
+												nullCallererererCount++;
+												if(nullCallererererCount == callerererers.size()){
+													for(int i = 0; i < levelThreePath.size(); i++){
+														numOfPaths++;
+														int analysisRes = analyzePath(levelThreePath.get(i), levelFindLoop);
+														if(analysisRes==0){
+															levelThreeLeaves++;
+															numOfWrongPaths++;
+															System.out.println(levelThreePath.get(i));
+															output += levelThreePath.get(i)+"\n";
+															System.out.println("This path is wrong!");
+															output += "This path is wrong!\n";
+															res = false;
+														}else{
+															numOfRightPaths++;
+															System.out.println("This path is right!");
+															output += "This path is right!\n";
+															switch (analysisRes) {
+															case 1:
+																System.out.println("satisfy pattern 1");
+																output += "satisfy pattern 1\n";
+																numOfPatternOne++;
+																break;
+															case 2:
+																System.out.println("satisfy pattern 2");
+																output += "satisfy pattern 1\n";
+																numOfPatternTwo++;
+																break;
+															case 3:
+																System.out.println("satisfy pattern 3");
+																output += "satisfy pattern 1\n";
+																numOfPatternThree++;
+																break;
+															case 4:
+																System.out.println("satisfy pattern 4");
+																output += "satisfy pattern 1\n";
+																numOfPatternFour++;
+																break;
+															}
+														}
+													}
+												}
+												continue;
+											}
+											levelFourCallers++;
+											System.out.println("level 4 method declaration:\n" + callererererDeclaration);
+											output += "level 4 method declaration:\n" + callererererDeclaration + "\n";
+											List<List> levelFourPath = findPath(callererererDeclaration, callererer, 4);
+											if(levelFourPath.size() == 0){
+												levelFourPath = levelThreePath;
+											}else {
+												List<List> tempLevelFour = new ArrayList<List>();
+												for(int i = 0; i < levelFourPath.size(); i++){
+													for(int j = 0; j < levelThreePath.size(); j++){
+														ArrayList path = new ArrayList();
+														path.addAll(levelFourPath.get(i));
+														path.addAll(levelThreePath.get(j));
+														tempLevelFour.add(path);
+													}
+												}
+												levelFourPath = tempLevelFour;
+											}
+											
+											//allPaths.addAll(levelThreePath);
+											for(int i = 0; i < levelFourPath.size(); i++){
+												levelFourLeaves++;
+												numOfPaths++;
+												int analysisRes = analyzePath(levelFourPath.get(i), levelFindLoop);
+												if(analysisRes == 0){
+													numOfWrongPaths++;
+													System.out.println(levelFourPath.get(i));
+													output += levelFourPath.get(i)+"\n";
+													System.out.println("This path is wrong!");
+													output += "This path is wrong!\n";
+													res = false;
+												}else{
+													numOfRightPaths++;
+													System.out.println("This path is right!");
+													output += "This path is right!\n";
+													switch (analysisRes) {
+													case 1:
+														System.out.println("satisfy pattern 1");
+														output += "satisfy pattern 1\n";
+														numOfPatternOne++;
+														break;
+													case 2:
+														System.out.println("satisfy pattern 2");
+														output += "satisfy pattern 1\n";
+														numOfPatternTwo++;
+														break;
+													case 3:
+														System.out.println("satisfy pattern 3");
+														output += "satisfy pattern 1\n";
+														numOfPatternThree++;
+														break;
+													case 4:
+														System.out.println("satisfy pattern 4");
+														output += "satisfy pattern 1\n";
+														numOfPatternFour++;
+														break;
+													}
+												}
+											}
+										}				
+										
+										
+									
+										
 										
 									}
 								}
@@ -444,19 +571,25 @@ public class SampleHandler extends AbstractHandler {
 			int numberOfPathsWithOneLevel = levelOneCallers;
 			int numberOfPathsWithTwoLevel = levelTwoCallers + levelOneLeaves;
 			int numberOfPathsWithThreeLevel = levelThreeCallers + levelOneLeaves + levelTwoLeaves;
+			int numberOfPathsWithFoureLevel = levelFourCallers + levelOneLeaves + levelTwoLeaves + levelThreeLeaves;
+					
 			System.out.println("The number of paths with one level search: " + numberOfPathsWithOneLevel);
 			output += "The number of paths with one level search: " + numberOfPathsWithOneLevel + "\n";
 			System.out.println("The number of paths with two level search: " + numberOfPathsWithTwoLevel);
 			output += "The number of paths with two level search: " + numberOfPathsWithTwoLevel + "\n";
 			System.out.println("The number of paths with three level search: " + numberOfPathsWithThreeLevel);
 			output += "The number of paths with three level search: " + numberOfPathsWithThreeLevel + "\n";
+			System.out.println("The number of paths with four level search: " + numberOfPathsWithFoureLevel);
+			output += "The number of paths with four level search: " + numberOfPathsWithFoureLevel + "\n";
 			
 			System.out.println("The number of loops found in level 1: " + levelFindLoop[0]);
 			output += "The number of loops found in level 1: " + levelFindLoop[0]+ "\n";
 			System.out.println("The number of loops found in level 2: " + levelFindLoop[1]);
-			output += "The number of loops found in level 2: " + levelFindLoop[0]+ "\n";
+			output += "The number of loops found in level 2: " + levelFindLoop[1]+ "\n";
 			System.out.println("The number of loops found in level 3: " + levelFindLoop[2]);
 			output += "The number of loops found in level 3: " + levelFindLoop[2]+ "\n";
+			System.out.println("The number of loops found in level 4: " + levelFindLoop[3]);
+			output += "The number of loops found in level 4: " + levelFindLoop[3]+ "\n";
 		
 			System.out.println("The number of paths found bounded by pattern numeral literal: " + numOfPatternOne);
 			output += "The number of paths found bounded by pattern numeral literal: " + numOfPatternOne + "\n";
